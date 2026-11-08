@@ -1,0 +1,34 @@
+Текст первого экрана форм v2.0 (скопирован руководителем из режима редактирования Google Forms, 23.10.2026). Приводится дословно.
+
+=== RU ===
+Название: Диагностика Meta_Ozat: как ты думаешь, что тебе интересно
+
+Описание:
+Привет! Это анкета научного проекта Казахского агротехнического исследовательского университета имени С. Сейфуллина (проект AP25796141). Мы создаём образовательную платформу, которая подстраивается под интересы и способности каждого ученика. Твои ответы помогут сделать её лучше.
+
+Здесь нет правильных и неправильных ответов (кроме одного небольшого блока с заданиями — там просто постарайся). Анкета анонимная: мы не спрашиваем имя, ответы видят только исследователи. Время — около 25 минут. Отвечай честно и самостоятельно, не советуясь с соседом и без помощи интернета или ИИ.
+
+Вопрос согласия (обязательный, одна галочка): «Согласие на участие в исследовании»
+Вариант ответа: Я понимаю, что участие добровольное, анкета анонимная, и мои ответы будут использованы только в научных целях.
+
+Вопрос возраста (обязательный): «Тебе исполнилось 18 лет?» — Да / Нет (при «Нет» форма завершается).
+
+=== KZ ===
+Атауы: Meta_Ozat диагностикасы: сен қалай ойлайсың, саған не қызық
+
+Сипаттама:
+Сәлем! Бұл — С. Сейфуллин атындағы Қазақ агротехникалық зерттеу университетінің ғылыми жобасының сауалнамасы (AP25796141 жобасы). Біз әр оқушының қызығушылығы мен қабілетіне бейімделетін білім беру платформасын жасап жатырмыз. Сенің жауаптарың оны жақсартуға көмектеседі.
+
+Мұнда дұрыс немесе бұрыс жауап жоқ (тек бір шағын тапсырмалар блогы бар — онда жай ғана тырыс). Сауалнама анонимді: біз атыңды сұрамаймыз, жауаптарды тек зерттеушілер көреді. Уақыты — шамамен 25 минут. Шын жүректен, өз бетіңше, көршіңмен ақылдаспай, интернет пен ЖИ көмегінсіз жауап бер.
+
+Келісім сұрағы (міндетті, бір құсбелгі): «A7. Келісім»
+Жауап нұсқасы: Қатысу ерікті, сауалнама анонимді және жауаптарым тек ғылыми мақсатта қолданылатынын түсінемін.
+
+Жас сұрағы (міндетті): «Саған 18 жас толды ма?» — Иә / Жоқ.
+
+=== English gloss (for the registration) ===
+Header: "Hello! This is the questionnaire of a research project of S. Seifullin Kazakh Agro-Technical Research University (project AP25796141). We are building an educational platform that adapts to each learner's interests and abilities. Your answers will help improve it. There are no right or wrong answers (except one small block of tasks — just do your best). The questionnaire is anonymous: we do not ask your name; responses are seen only by researchers. Time — about 25 minutes. Answer honestly and on your own, without consulting a neighbour and without the internet or AI."
+Consent checkbox: "I understand that participation is voluntary, the questionnaire is anonymous, and my responses will be used only for scientific purposes."
+Age item: "Are you 18 or older?" — Yes / No.
+
+Note: the text does not mention publication of the response texts in an open dataset. Consequence (recorded in the pre-registration, Methods 3.4/3.8 and the Datasheet): texts are shared with researchers under restricted access only; scores, metadata, rubric, guidelines and code are released openly. The header still says "each learner/pupil" (оқушы / ученик) — wording inherited from the school version of the form; the age item restricts participants to adults.
