@@ -29,7 +29,7 @@ ALPHA = 0.05
 PROMPTS = ("E1", "E2", "E3", "E4", "E5")
 LANGS = ("kz", "ru")
 LEVELS = (0, 1, 2, 3, 4)
-FEWSHOT_K = (50, 100, 200)
+FEWSHOT_K = (50, 100, 150)   # пререгистрация (SDGYE): k=200 неоцениваем, KZ-фолд ≈ 165 на вопрос
 CONDITIONS = ("mono", "zeroshot", "fewshot", "joint", "translate_test", "translate_train")
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -48,6 +48,14 @@ def load_data(data_dir: Path | str = DEFAULT_DATA, labels_file: str = "labels_fi
     df = df.rename(columns={"form_lang": "lang"})
     df["lang"] = df["lang"].str.lower().map({"kz": "kz", "kk": "kz", "ru": "ru"}).fillna(df["lang"])
     df = df[df["score_final"].notna()].copy()
+    # пререгистрация: пустые ответы и ответы без букв/цифр («-», «.», «...») получают 0 по правилу,
+    # входят в описательные счёты, но НЕ в моделирование (иначе тривиальные нули завышают QWK)
+    no_letters = df["text"].fillna("").map(lambda t: re.search(r"\w", str(t)) is None)
+    if no_letters.any():
+        print(f"[common] исключено из моделирования {int(no_letters.sum())} ответов без букв/цифр (балл 0 по правилу)")
+    df = df[~no_letters].copy()
+    if "copied_text" in df:
+        df = df[df["copied_text"] != 1].copy()
     df["y"] = df["score_final"].round().astype(int).clip(0, 4)
     if "n_chars" not in df:
         df["n_chars"] = df["text"].fillna("").str.len()

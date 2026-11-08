@@ -15,6 +15,7 @@ mt_compare.py — выбор системы машинного перевода 
     (response_id, mt_lang, text_mt, mt_system, mt_date). Переводы публикуются с корпусом.
 """
 import argparse, os, sys, time, json
+os.environ.setdefault("HF_HUB_OFFLINE", "1")   # модели только из кэша; тексты никуда не уходят
 from pathlib import Path
 from datetime import date
 import numpy as np, pandas as pd
@@ -24,8 +25,8 @@ NLLB_LANG = {"kz": "kaz_Cyrl", "ru": "rus_Cyrl"}
 
 
 def make_template(a):
-    sys.path.insert(0, str(Path(__file__).parent)); import common as C
     try:
+        sys.path.insert(0, str(Path(__file__).parent)); import common as C
         df = C.load_data(a.data, a.labels)
     except Exception:
         r = pd.read_csv(Path(a.data) / "responses.csv", encoding="utf-8-sig").rename(columns={"form_lang": "lang"}); r["y"] = -1; df = r
@@ -61,7 +62,7 @@ class NLLBTranslator:
         for i in range(0, len(texts), bs):
             enc = self.tok(texts[i:i+bs], return_tensors="pt", padding=True, truncation=True, max_length=512).to(self.dev)
             with self.torch.no_grad():
-                gen = self.model.generate(**enc, forced_bos_token_id=self.tok.convert_tokens_to_ids(NLLB_LANG[tgt]), max_new_tokens=512, num_beams=4)
+                gen = self.model.generate(**enc, forced_bos_token_id=self.tok.convert_tokens_to_ids(NLLB_LANG[tgt]), max_new_tokens=512, num_beams=4, no_repeat_ngram_size=4)  # защита от зацикливания (пилот 04.11: «интеллектуальная ×N» в KZ0108_E3)
             out += self.tok.batch_decode(gen, skip_special_tokens=True)
         return out
 
@@ -94,7 +95,33 @@ class YandexTranslator:
         return out
 
 
-SYSTEMS = {"nllb": NLLBTranslator, "google": GoogleTranslator, "yandex": YandexTranslator}
+import re as _re
+_SENT = _re.compile(r"(?<=[.!?…])\s+")
+
+
+def split_sentences(text):
+    """Простое разбиение на предложения по . ! ? … + пробел/перенос; переносы строк — тоже граница."""
+    parts = []
+    for line in str(text).splitlines():
+        parts += [s.strip() for s in _SENT.split(line) if s.strip()]
+    return parts or [""]
+
+
+class NLLBSentTranslator(NLLBTranslator):
+    """NLLB по предложениям: каждый ответ режется на предложения, переводится, склеивается пробелом."""
+    def __call__(self, texts, src, tgt, bs=16):
+        segs, owner = [], []
+        for i, t in enumerate(texts):
+            for s in split_sentences(t): segs.append(s); owner.append(i)
+        hyp = NLLBTranslator.__call__(self, segs, src, tgt, bs=bs)
+        out = [[] for _ in texts]
+        for i, h in zip(owner, hyp): out[i].append(h)
+        return [" ".join(x).strip() for x in out]
+
+
+# google / yandex оставлены в коде только для полноты: НЕ использовать на реальных ответах —
+# облачный перевод противоречит согласию участников (DEVIATIONS 03.11.2026).
+SYSTEMS = {"nllb": NLLBTranslator, "nllb_sent": NLLBSentTranslator, "google": GoogleTranslator, "yandex": YandexTranslator}
 
 
 def run(a):
@@ -117,7 +144,6 @@ def run(a):
     R = pd.DataFrame(res).sort_values("chrF", ascending=False); R.to_csv("mt_compare_results.csv", index=False, encoding="utf-8-sig")
     if len(R):
         print(f"\nЛучшая по chrF: {R.iloc[0].system}. Зафиксировать в пре-регистрации: система, версия/дата, chrF={R.iloc[0].chrF}.")
-        print("Если лучшая — закрытая (google/yandex): в статье указать версию и дату, переводы публикуются с корпусом; nllb — как открытая воспроизводимая вторая система.")
 
 
 def translate_all(a):
@@ -126,7 +152,7 @@ def translate_all(a):
     for src, tgt in (("kz", "ru"), ("ru", "kz")):
         sub = r[r.lang == src]; texts = sub.text.fillna("").tolist()
         hyp = tr(texts, src, tgt)
-        rows += [{"response_id": rid, "mt_lang": tgt, "text_mt": h, "mt_system": a.system + ("/" + NLLB if a.system == "nllb" else ""), "mt_date": str(date.today())} for rid, h in zip(sub.response_id, hyp)]
+        rows += [{"response_id": rid, "mt_lang": tgt, "text_mt": h, "mt_system": a.system + ("/" + NLLB if a.system.startswith("nllb") else ""), "mt_date": str(date.today())} for rid, h in zip(sub.response_id, hyp)]
         print(f"{src}->{tgt}: {len(sub)}")
     pd.DataFrame(rows).to_csv(a.out, index=False, encoding="utf-8-sig"); print("->", a.out)
 
@@ -134,7 +160,7 @@ def translate_all(a):
 def main():
     ap = argparse.ArgumentParser(); sp = ap.add_subparsers(dest="cmd", required=True)
     p = sp.add_parser("make-template"); p.add_argument("--data", required=True); p.add_argument("--labels", default="labels_final.csv"); p.add_argument("--n", type=int, default=50)
-    p = sp.add_parser("run"); p.add_argument("--human", default="human_translation_template.csv"); p.add_argument("--systems", nargs="*", default=["nllb", "google", "yandex"])
+    p = sp.add_parser("run"); p.add_argument("--human", default="human_translation_template.csv"); p.add_argument("--systems", nargs="*", default=["nllb", "nllb_sent"])
     p = sp.add_parser("translate-all"); p.add_argument("--data", required=True); p.add_argument("--system", required=True, choices=list(SYSTEMS)); p.add_argument("--out", required=True)
     a = ap.parse_args(); {"make-template": make_template, "run": run, "translate-all": translate_all}[a.cmd](a)
 

@@ -8,8 +8,9 @@ score_llm.py — оценка ответов открытой LLM (Methods 4.2):
 Smoke без модели (случайный «оценщик», проверка формата файлов): python score_llm.py --data ../test_clean --labels labels_final_SYNTHETIC.csv --dry
 Промпт и рубрика — те же, что в gpu/smoke_test_llm.py (единый источник: prompts_llm.py).
 """
-import argparse, re, time
+import argparse, os, re, time
 from pathlib import Path
+os.environ.setdefault("HF_HUB_OFFLINE", "1"); os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
 import numpy as np, pandas as pd
 import common as C
 from prompts_llm import RUBRIC, PROMPTS, build_messages, DIGIT
@@ -34,22 +35,39 @@ class Scorer:
         if dry: return
         import torch
         from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
-        kw = {"device_map": "auto", "dtype": torch.float16}
-        if quant:
-            kw["quantization_config"] = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.float16, bnb_4bit_use_double_quant=True)
         self.tok = AutoTokenizer.from_pretrained(repo)
-        try:
-            self.model = AutoModelForCausalLM.from_pretrained(repo, **kw)
-        except Exception:
-            from transformers import AutoModelForImageTextToText
-            self.model = AutoModelForImageTextToText.from_pretrained(repo, **kw)
+        def bnb(off):
+            return BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.float16,
+                                      bnb_4bit_use_double_quant=True, llm_int8_enable_fp32_cpu_offload=off)
+        attempts = [("GPU only", {"device_map": {"": 0}, "dtype": torch.float16, "quantization_config": bnb(False)}),
+                    ("GPU + CPU offload", {"device_map": "auto", "max_memory": {0: "6.5GiB", "cpu": "24GiB"}, "dtype": torch.float16, "quantization_config": bnb(True)})] if quant else [("fp16", {"device_map": "auto", "dtype": torch.float16})]
+        last = None
+        for name, kw in attempts:
+            try:
+                self.model = AutoModelForCausalLM.from_pretrained(repo, **kw); print(f"[score_llm] loaded via {name}"); break
+            except Exception as e:
+                last = e; print(f"[score_llm] load failed ({name}): {str(e)[:200]}"); import gc; gc.collect(); torch.cuda.empty_cache()
+        else:
+            raise last
         self.model.eval()
         try:
-            from huggingface_hub import model_info; self.rev = model_info(repo).sha
+            from huggingface_hub import scan_cache_dir
+            for rep in scan_cache_dir().repos:
+                if rep.repo_id == repo: self.rev = ",".join(r.commit_hash[:12] for r in rep.revisions)
         except Exception: pass
         self.torch = torch
 
-    def score(self, messages) -> tuple[int | None, str]:
+    def _prefix_cache(self, pids):
+        """KV-кэш общего префикса (system + блок примеров) — один на (вопрос, фолд). Результат идентичен
+        полному прогону (те же токены, greedy); экономит повторный пересчёт ~25 примеров для каждого ответа."""
+        from transformers import DynamicCache
+        try: cache = DynamicCache(config=self.model.config)
+        except TypeError: cache = DynamicCache()
+        with self.torch.no_grad():
+            self.model(input_ids=pids, attention_mask=self.torch.ones_like(pids), past_key_values=cache, use_cache=True)
+        return cache
+
+    def score(self, messages, prefix_text=None) -> tuple[int | None, str]:
         if self.dry:
             g = str(np.random.randint(0, 5)) if np.random.rand() > 0.03 else "Балл: 3"
         else:
@@ -57,8 +75,36 @@ class Scorer:
             try: prompt = self.tok.apply_chat_template(messages, enable_thinking=False, **kw)
             except TypeError: prompt = self.tok.apply_chat_template(messages, **kw)
             enc = self.tok(prompt, return_tensors="pt").to(self.model.device)
+            gen_kw = dict(max_new_tokens=8, do_sample=False, temperature=None, top_p=None, pad_token_id=self.tok.eos_token_id)
+            cache = None
+            if prefix_text and getattr(self, "use_prefix_cache", True):
+                cut = prompt.find(prefix_text)
+                if cut >= 0:
+                    pstr = prompt[:cut + len(prefix_text)]
+                    if getattr(self, "_pkey", None) != pstr:
+                        pids = self.tok(pstr, return_tensors="pt")["input_ids"].to(self.model.device)
+                        self._pkey, self._plen, self._pids = pstr, pids.shape[-1], pids
+                        try:
+                            self._cache = self._prefix_cache(pids)
+                        except Exception as e:
+                            print(f"[score_llm] prefix cache off: {str(e)[:120]}"); self.use_prefix_cache = False; self._cache = None
+                    ids = enc["input_ids"]
+                    if self._cache is not None and ids.shape[-1] > self._plen and self.torch.equal(ids[0, :self._plen], self._pids[0]):
+                        if getattr(self, "_copy_mode", False):
+                            import copy; cache = copy.deepcopy(self._cache)      # гибридные модели (Qwen3.5): кэш не обрезается — копия чистого префикса
+                        else:
+                            try:
+                                extra = self._cache.get_seq_length() - self._plen
+                                if extra > 0: self._cache.crop(-extra)
+                                cache = self._cache
+                            except Exception as e:
+                                print(f"[score_llm] prefix cache: crop не поддерживается ({str(e)[:80]}) — режим копии"); self._copy_mode = True
+                                self._cache = self._prefix_cache(self._pids); import copy; cache = copy.deepcopy(self._cache)
             with self.torch.no_grad():
-                out = self.model.generate(**enc, max_new_tokens=8, do_sample=False, temperature=None, top_p=None, pad_token_id=self.tok.eos_token_id)
+                if cache is not None:
+                    out = self.model.generate(**enc, past_key_values=cache, **gen_kw)
+                else:
+                    out = self.model.generate(**enc, **gen_kw)
             g = self.tok.decode(out[0][enc["input_ids"].shape[-1]:], skip_special_tokens=True)
         m = DIGIT.match(g)
         if m: return int(m.group(1)), g
@@ -68,33 +114,61 @@ class Scorer:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", default=str(C.DEFAULT_DATA)); ap.add_argument("--labels", default="labels_final.csv")
-    ap.add_argument("--repo", default="issai/LLama-3.1-KazLLM-1.0-8B"); ap.add_argument("--model", default="llm")
+    ap.add_argument("--repo", default="issai/Qwen3.5-9B-Kazakh"); ap.add_argument("--model", default="qwen_kz")  # KazLLM supplementary: --repo issai/LLama-3.1-KazLLM-1.0-8B --model kazllm_supp
     ap.add_argument("--modes", nargs="*", default=["zeroshot_llm", "fewshot_llm"]); ap.add_argument("--n_per_level", type=int, default=5)
     ap.add_argument("--targets", nargs="*", default=["kz", "ru"]); ap.add_argument("--seed", type=int, default=11)
     ap.add_argument("--dry", action="store_true"); ap.add_argument("--no-quant", action="store_true"); ap.add_argument("--out", default=str(C.PRED_DIR))
     a = ap.parse_args()
-    df = C.load_data(a.data, a.labels); sc = Scorer(a.repo, quant=not a.no_quant, dry=a.dry)
+    if a.labels.lower() == "none":
+        # без итоговых меток: только zero-shot; y = -1, берутся все ответы, допущенные к разметке (batch_id != excluded)
+        df = pd.read_csv(Path(a.data) / "responses.csv", encoding="utf-8-sig").rename(columns={"form_lang": "lang"})
+        if "batch_id" in df: df = df[df.batch_id != "excluded"]
+        df = df[df.text.fillna("").str.len() > 0].copy(); df["y"] = -1
+        if "n_chars" not in df: df["n_chars"] = df.text.str.len()
+        a.modes = [m for m in a.modes if m != "fewshot_llm"]
+        print(f"[score_llm] без меток: {len(df)} ответов, режимы {a.modes}")
+    else:
+        df = C.load_data(a.data, a.labels)
+    sc = Scorer(a.repo, quant=not a.no_quant, dry=a.dry)
     folds = C.make_folds(df, a.seed)
+    out_dir = Path(a.out); out_dir.mkdir(parents=True, exist_ok=True)
     for mode in a.modes:
         for target in a.targets:
             spec = C.RunSpec(model=a.model, condition=mode, target_lang=target, k=(a.n_per_level * 5 if mode == "fewshot_llm" else 0), seed=a.seed)
             rows = []; t0 = time.time(); invalid = 0
+            part = out_dir / (spec.name() + ".partial.csv")          # возобновление после прерывания
+            done = set()
+            if part.exists():
+                prev = pd.read_csv(part, encoding="utf-8-sig"); rows = prev.to_dict("records"); done = set(prev.response_id); invalid = int(prev.invalid_format.sum())
+                print(f"[score_llm] {spec.name()}: продолжаю, уже есть {len(done)}")
+            n_since_save = 0
             for q in C.PROMPTS:
                 for f in range(C.N_FOLDS):
                     test = df[(df.question == q) & (df.lang == target) & (folds == f)]
                     ex = pick_examples(df[(df.question == q) & (df.lang == target) & (folds != f)], a.n_per_level, a.seed + f) if mode == "fewshot_llm" else None
                     for _, r in test.iterrows():
+                        if r.response_id in done: continue
                         msgs = build_messages(target, q, r.text)
+                        pref = None
                         if ex is not None and len(ex):
-                            msgs[1]["content"] = fewshot_block(ex, target) + "\n\n" + msgs[1]["content"]
-                        y, raw = sc.score(msgs)
+                            pref = fewshot_block(ex, target)
+                            msgs[1]["content"] = pref + "\n\n" + msgs[1]["content"]
+                        y, raw = sc.score(msgs, prefix_text=pref)
                         bad = int(y is None or not DIGIT.match(raw)); invalid += bad
                         rows.append({"response_id": r.response_id, "student_id": r.student_id, "lang": r.lang, "question": q, "n_chars": r.n_chars,
                                      "fold": f, "y_true": int(r.y), "y_pred": int(y if y is not None else 0), "invalid_format": bad,
                                      "raw_output": raw.replace("\n", "\\n")[:60], "revision": sc.rev, "repo": a.repo})
-            C.save_predictions(spec, rows, Path(a.out))
-            m = C.metrics([r["y_true"] for r in rows], [r["y_pred"] for r in rows])
-            print(f"{spec.name():50s} n={m['n']} QWK={m['qwk']:.3f} invalid={invalid} ({time.time()-t0:.0f}s)")
+                        n_since_save += 1
+                        if n_since_save >= 25:
+                            pd.DataFrame(rows).to_csv(part, index=False, encoding="utf-8-sig"); n_since_save = 0
+                            print(f"  {spec.name()}: {len(rows)} готово, {(time.time()-t0)/60:.0f} мин", flush=True)
+            C.save_predictions(spec, rows, out_dir)
+            if part.exists(): part.unlink()
+            if len(rows) and all(r["y_true"] >= 0 for r in rows):
+                m = C.metrics([r["y_true"] for r in rows], [r["y_pred"] for r in rows])
+                print(f"{spec.name():50s} n={m['n']} QWK={m['qwk']:.3f} invalid={invalid} ({time.time()-t0:.0f}s)")
+            else:
+                print(f"{spec.name():50s} n={len(rows)} (без меток — QWK будет посчитан после разметки) invalid={invalid} ({time.time()-t0:.0f}s)")
 
 if __name__ == "__main__":
     main()
