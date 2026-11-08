@@ -1,0 +1,5 @@
+﻿variant,n_val,val_qwk_pooled,val_qwk_mean_prompt,share_majority_pred,pred_dist,median_best_epoch,median_epochs_run,median_last_train_loss
+A_registered,425,0.088,0.039,0.781,"{""2"": 0.78, ""3"": 0.22}",1.0,3.0,1.07
+B_warmup_p2,425,0.102,0.024,0.725,"{""2"": 0.72, ""3"": 0.28}",1.0,3.0,1.079
+C_warmup_best10,425,0.237,0.232,0.574,"{""1"": 0.03, ""2"": 0.57, ""3"": 0.4}",1.0,10.0,0.907
+D_warmup_best20,425,0.669,0.64,0.692,"{""0"": 0.02, ""1"": 0.03, ""2"": 0.69, ""3"": 0.22, ""4"": 0.04}",13.0,20.0,0.404
