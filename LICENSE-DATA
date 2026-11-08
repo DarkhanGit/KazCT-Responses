@@ -1,6 +1,6 @@
-The KazCT-Responses corpus (contents of data/ and docs/) is licensed under the Creative Commons Attribution 4.0 International License (CC BY 4.0).
+The open tier of the KazCT-Responses corpus (scores, metadata, rubric, guidelines, prompts; contents of data/ and docs/ in this repository) is licensed under the Creative Commons Attribution 4.0 International License (CC BY 4.0). Response texts are NOT in this repository: they are available to researchers on request under a data-use agreement (see README).
 Full text: https://creativecommons.org/licenses/by/4.0/legalcode
 
 Attribution: Zhaxybayev D. et al. (2027). KazCT-Responses: A Bilingual Kazakh–Russian Corpus of Student Reasoning Responses. Zenodo. ⟨DOI⟩
 
-The texts were written by adult undergraduate students in Kazakhstan who consented to the publication of anonymised responses in an open research dataset. Users must not attempt to re-identify any student, group or institution.
+The texts were written by adult undergraduate students in Kazakhstan who were told that their responses would be used only for scientific purposes and seen only by researchers; this is why texts are shared only with researchers. Users of any tier must not attempt to re-identify any student or institution.

@@ -1,28 +1,28 @@
 cff-version: 1.2.0
+# NOTE: co-author list to be confirmed by the PI before the Zenodo record is published.
 message: "If you use this corpus or code, please cite both the dataset and the paper."
-title: "KazCT-Responses: A Bilingual Kazakh–Russian Corpus of Student Reasoning Responses"
+title: "KazCT-Responses: A Bilingual Kazakh–Russian Corpus of Student Reasoning Responses (open tier)"
 type: dataset
 authors:
   - family-names: Zhaxybayev
     given-names: Darkhan
-    affiliation: "S. Seifullin Kazakh Agro-Technical Research University"
-  - family-names: Sambetbayeva
-    given-names: Madina
-    affiliation: "S. Seifullin Kazakh Agro-Technical Research University"
-  - family-names: "⟨co-author⟩"
-    given-names: "⟨…⟩"
+    affiliation: "S. Seifullin Kazakh Agro-Technical Research University, Astana, Kazakhstan"
+    email: d.zhaksybaev@kazatu.edu.kz
 version: "1.0.0"
-date-released: "⟨YYYY-MM-DD⟩"
-doi: "⟨10.5281/zenodo.XXXXXXX⟩"
+date-released: "2026-11-08"
+doi: "10.5281/zenodo.24047377"
 license: CC-BY-4.0
-repository-code: "⟨https://github.com/…/kazct-responses⟩"
-keywords: [Kazakh, Russian, automated scoring, cross-lingual transfer, educational NLP, higher education, reasoning]
+repository-code: "https://github.com/DarkhanGit/KazCT-Responses"
+keywords: [Kazakh, Russian, automated scoring, cross-lingual transfer, educational NLP, higher education, reasoning, low-resource language]
+identifiers:
+  - type: doi
+    value: 10.17605/OSF.IO/SDGYE
+    description: "OSF pre-registration"
 preferred-citation:
   type: article
   title: "KazCT-Responses: A Bilingual Kazakh–Russian Corpus of Student Reasoning Responses and Cross-Lingual Automated Scoring for a Low-Resource Language"
   authors:
     - family-names: Zhaxybayev
       given-names: Darkhan
-  journal: "⟨journal⟩"
-  year: 2027
-  doi: "⟨…⟩"
+  year: 2026
+  notes: "Under review; co-authors, journal and DOI to be added on acceptance."
