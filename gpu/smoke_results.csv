@@ -1,0 +1,4 @@
+﻿model_key,repo,quant4bit,load_ok,error,vram_gb,n,format_valid,ru_valid,kz_valid,sec_per_resp,transformers,revision,load_seconds
+kazllm,issai/LLama-3.1-KazLLM-1.0-8B,True,True,,5.73,60,0.883,1.0,0.767,0.61,5.21.0,015343c542fa,25.5
+qwen,issai/Qwen3.5-9B-Kazakh,True,True,,7.57,60,1.0,1.0,1.0,15.4,5.21.0,92c4210d5f0f,28.8
+sherkala,inception42/Llama-3.1-Sherkala-8B-Chat,True,True,,6.0,60,0.917,1.0,0.833,0.41,5.21.0,ab873dfe8b5c,42.1
