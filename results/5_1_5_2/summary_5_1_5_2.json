@@ -1,0 +1,98 @@
+{
+ "scores_total": {
+  "0": 106,
+  "1": 129,
+  "2": 911,
+  "3": 428,
+  "4": 152
+ },
+ "scores_by_lang_mean": {
+  "kz": 2.177,
+  "ru": 2.301
+ },
+ "len_score_spearman": {
+  "kz": 0.668,
+  "ru": 0.552
+ },
+ "len_score_spearman_all": 0.619,
+ "flags": {
+  "ai_suspect": {
+   "R1": 56,
+   "R2": 52,
+   "R3": 18,
+   "any_R1R2_responses": 67,
+   "both_R1R2_responses": 41
+  },
+  "offtopic": {
+   "R1": 13,
+   "R2": 15,
+   "R3": 2,
+   "any_R1R2_responses": 16,
+   "both_R1R2_responses": 12
+  },
+  "lang_switch": {
+   "R1": 8,
+   "R2": 3,
+   "R3": 0,
+   "any_R1R2_responses": 8,
+   "both_R1R2_responses": 3
+  },
+  "pii": {
+   "R1": 0,
+   "R2": 0,
+   "R3": 0,
+   "any_R1R2_responses": 0,
+   "both_R1R2_responses": 0
+  },
+  "empty": {
+   "R1": 92,
+   "R2": 87,
+   "R3": 0,
+   "any_R1R2_responses": 92,
+   "both_R1R2_responses": 87
+  }
+ },
+ "ai_suspect_by_lang": {
+  "kz": 47,
+  "ru": 20
+ },
+ "R3_subset_pairwise": {
+  "R1-R2": 0.764,
+  "R1-R3": 0.709,
+  "R2-R3": 0.671,
+  "mean": 0.715
+ },
+ "diff_R1_minus_R2": {
+  "-2.0": 1,
+  "-1.0": 121,
+  "0.0": 1310,
+  "1.0": 247,
+  "2.0": 17
+ },
+ "adjudicated": 18,
+ "adjudicated_final": {
+  "3": 9,
+  "4": 9
+ },
+ "final_rule_higher_of_two": 375,
+ "len_vs_rater_diff_spearman": 0.26,
+ "H1": {
+  "kz": {
+   "QWK": 0.866,
+   "CI": [
+    0.839,
+    0.89
+   ],
+   "meets_0.60": true
+  },
+  "ru": {
+   "QWK": 0.79,
+   "CI": [
+    0.745,
+    0.828
+   ],
+   "meets_0.60": true
+  }
+ },
+ "H1_supported": true
+}
