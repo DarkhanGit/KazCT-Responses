@@ -1,0 +1,60 @@
+{
+ "H2_mono_kz_per_prompt": {
+  "E1": 0.643,
+  "E2": 0.364,
+  "E3": 0.625,
+  "E4": 0.498,
+  "E5": 0.166
+ },
+ "H2_n_prompts_ge_0.50": 2,
+ "H2_n_prompts_ge_0.60": 2,
+ "H2_supported": false,
+ "H3_gap_mono_minus_zs": 0.313,
+ "H3_ci": [
+  0.268,
+  0.355
+ ],
+ "H3_supported": true,
+ "H4_recovery_fs150": 0.584,
+ "H4_ci": [
+  0.507,
+  0.666
+ ],
+ "H4_supported": true,
+ "H5_tt_minus_fs150": -0.206,
+ "H5_ci": [
+  -0.237,
+  -0.171
+ ],
+ "H5_supported": false,
+ "H6_best_model": {
+  "model": "mBERT joint (best model with both languages)",
+  "n": 1726,
+  "intercept": -0.356,
+  "human": 0.669,
+  "lang_kz": -0.017,
+  "lang_kz_x_human": 0.014,
+  "log_chars": 0.206,
+  "intercept_ci": [
+   -0.543,
+   -0.158
+  ],
+  "human_ci": [
+   0.611,
+   0.727
+  ],
+  "lang_kz_ci": [
+   -0.169,
+   0.123
+  ],
+  "lang_kz_x_human_ci": [
+   -0.049,
+   0.08
+  ],
+  "log_chars_ci": [
+   0.16,
+   0.25
+  ],
+  "lang_ci_includes_0": true
+ }
+}
