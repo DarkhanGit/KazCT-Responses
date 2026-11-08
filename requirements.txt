@@ -1,0 +1,16 @@
+# Python 3.11. Версии зафиксировать перед заморозкой кода (pip freeze > requirements-lock.txt).
+pandas>=2.2
+numpy>=1.26
+scipy>=1.13
+scikit-learn>=1.4
+statsmodels>=0.14
+matplotlib>=3.8
+torch>=2.5            # cu128 build on RTX 50-series: pip install torch --index-url https://download.pytorch.org/whl/cu128
+transformers>=4.51    # Qwen3.5 adaptation requires >=5.12
+accelerate>=1.0
+bitsandbytes>=0.45
+captum>=0.7
+sacrebleu>=2.4
+huggingface_hub>=0.25
+sentencepiece
+openpyxl
