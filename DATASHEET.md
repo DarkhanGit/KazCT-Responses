@@ -1,6 +1,6 @@
 # Datasheet for KazCT-Responses
 
-Following Gebru et al. (2021), *Datasheets for Datasets*, Communications of the ACM 64(12). Version 1.0 (8 November 2026), completed after annotation and analysis; items still in ⟨brackets⟩ depend on the pending ethics letter of KATRU and on the Zenodo/GitHub identifiers. Statements here must match Methods § 3 of the paper and the OSF pre-registration.
+Following Gebru et al. (2021), *Datasheets for Datasets*, Communications of the ACM 64(12). Version 1.0 (8 November 2026), completed after annotation and analysis; updated 11 November 2026 (ethics status based on national legislation; the confirming KATRU letter is pending); the remaining ⟨bracket⟩ concerns the compensation of the external raters. Statements here must match Methods § 3 of the paper and the OSF pre-registration.
 
 ## Motivation
 
@@ -56,7 +56,7 @@ Following Gebru et al. (2021), *Datasheets for Datasets*, Communications of the 
 
 **Over what timeframe?** 10–17 October 2026 (collection); 24–30 October 2026 (annotation); 1 November 2026 (adjudication); 1–7 November 2026 (modelling).
 
-**Were any ethical review processes conducted?** ⟨Approved by the Ethics Committee of S. Seifullin Kazakh Agro-Technical Research University, protocol number and date / Exempt under the university's regulations for anonymous questionnaire research with adults, letter number and date⟩.
+**Were any ethical review processes conducted?** No committee review. Under the legislation of the Republic of Kazakhstan, review by a bioethics commission is mandatory for biomedical research (Code of the Republic of Kazakhstan "On Public Health and the Healthcare System" No. 360-VI of 7 July 2020, Art. 1(20) and Art. 228; Typical Rules of Scientific Ethics, Order of the Minister of Science and Higher Education No. 529 of 20 November 2024, para. 6(16)); this anonymous, non-interventional questionnaire of adult students is not biomedical research. The participant-protection requirements of the same Rules (informed consent, safety and dignity of participants, personal-data protection, para. 6(15), 6(17), 6(27), 6(28)) and the Law "On Personal Data and Their Protection" No. 94-V were followed. A confirming letter from S. Seifullin Kazakh Agrotechnical Research University was requested on 8 November 2026; its number and date will be added here on receipt (OSF registration update 4; paper Appendix C.10).
 
 **Did the individuals consent?** Yes. All participants were adults (confirmed by a mandatory age question). Electronic informed consent on the first screen of the form, which stated the purpose, voluntariness and anonymity of the study and that responses are seen only by researchers; the consent checkbox read "I understand that participation is voluntary, the questionnaire is anonymous, and my responses will be used only for scientific purposes". Open publication of texts was not mentioned, which is why texts are distributed under restricted access (see Distribution). Students could simply not fill in the form; the number who declined is unknown.
 
@@ -86,9 +86,9 @@ Following Gebru et al. (2021), *Datasheets for Datasets*, Communications of the 
 
 ## Distribution
 
-**How will it be distributed?** Two tiers. Open tier (Zenodo, versioned, DOI 10.5281/zenodo.24047377; GitHub https://github.com/DarkhanGit/KazCT-Responses): scores, flags, metadata, rubric, guidelines, prompts, code, predictions, result tables, this datasheet. Restricted tier (Zenodo restricted-access record): response texts, machine translations, rater comments and the human reference translations of the MT pilot, available to researchers on request under a data-use agreement (research use only; no re-identification; no redistribution) ⟨subject to approval by the university's ethics body⟩.
+**How will it be distributed?** Two tiers. Open tier (Zenodo, versioned, DOI 10.5281/zenodo.24047377; GitHub https://github.com/DarkhanGit/KazCT-Responses): scores, flags, metadata, rubric, guidelines, prompts, code, predictions, result tables, this datasheet. Restricted tier (Zenodo restricted-access record): response texts, machine translations, rater comments and the human reference translations of the MT pilot, available to researchers on request under a data-use agreement (research use only; no re-identification; no redistribution). Requests are handled by the corresponding authors.
 
-**When?** Open tier v1.0: 8 November 2026 (at submission). Restricted tier: after the university's decision on the access model.
+**When?** Open tier v1.0: 8 November 2026 (at submission). Restricted tier: on request from the corresponding authors (data-use agreement).
 
 **Licence?** Open tier: CC BY 4.0 for data and documentation, MIT for code. Restricted tier: data-use agreement, research use only.
 
