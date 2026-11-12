@@ -16,18 +16,18 @@ Pre-registration: OSF https://doi.org/10.17605/OSF.IO/SDGYE (23 October 2026, af
 | Tier | Where | Contents | Licence |
 |---|---|---|---|
 | **Open** (this repository, Zenodo) | GitHub + Zenodo | all scores and flags keyed to response IDs, student-level metadata, response-level metadata (language, prompt, length, ingest flags), rubric and annotator guide, prompts, consent text, pre-registration texts and deviations log, all code, all model predictions, result tables and figures, datasheet | CC BY 4.0 (data, docs), MIT (code) |
-| **Restricted** | Zenodo, restricted-access record (on request) | response texts (`responses.csv` with `text`), machine translations (`translations.csv`), rater comments (which quote response words), human reference translations of the MT pilot | data-use agreement: research use only, no re-identification, no redistribution |
+| **Restricted** | held by the authors (on request) | response texts (`responses.csv` with `text`), machine translations (`translations.csv`), rater comments (which quote response words), human reference translations of the MT pilot | data-use agreement: research use only, no re-identification, no redistribution |
 
-Participants were told that their responses would be seen only by researchers and were not asked to consent to open publication; therefore no response text, translation or quoting comment is released openly. Requests for the restricted tier: via the Zenodo record request button or by e-mail to the maintainer (below), stating the research purpose; the data-use agreement is sent in reply.
+Participants were told that their responses would be seen only by researchers and were not asked to consent to open publication; therefore no response text, translation or quoting comment is released openly. Requests for the restricted tier: by e-mail to the maintainer (below), stating the research purpose; the data-use agreement is sent in reply.
 
 ## Files in `data/`
 
 | File | Rows | Columns |
 |---|---|---|
 | `responses_meta.csv` | 1,840 | `response_id`, `student_id`, `question` (E1–E5), `level`, `text_lang_detected`, `n_chars`, `n_words`, `form_lang` (kz/ru), `university` (KATRU/ENU), `school_lang`, `is_empty`, `short` (< 150 characters), `copied_text`, `copy_of`, `batch_id` — everything from `responses.csv` except the text |
-| `students.csv` | 368 | `student_id`, `form_lang`, `university`, `gender`, `school_lang`, `internet_hours`, `attention_fail`, `ct_closed` (six closed critical-thinking items), `n_empty`, `n_short`, `submitted_at` |
+| `students.csv` | 368 | `student_id`, `form_lang`, `university`, `gender` (1 = male, 2 = female, 0 = not stated), `school_lang`, `internet_hours`, `attention_fail`, `ct_closed` (six closed critical-thinking items), `n_empty`, `n_short`, `submitted_at` |
 | `labels_expert.csv` | 3,856 | every rater score in long format: `response_id`, `rater_id` (R1/R2/R3), `score` (0–4), `flag` (empty / offtopic / ai_suspect / lang_switch / pii), `rated_at`, `batch_id`. The rater `comment` column is in the restricted tier only |
-| `labels_final.csv` | 1,840 | `score_r1`, `score_r2`, `score_r3` (200 responses), `score_final`, `adjudicated`, `split` (train/test, 80/20, grouped by student) |
+| `labels_final.csv` | 1,813 (no rows for the 27 verbatim copies) | `score_r1`, `score_r2`, `score_r3` (200 responses), `score_final`, `adjudicated`, `split` (train/test, 80/20, grouped by student) |
 | `adjudication.csv` | 18 | responses adjudicated by the project lead (`score_final`, date) |
 | `r3_subset.csv` | 200 | the stratified subset scored by R3 |
 | `agreement_2026-11-01.json` | — | inter-rater statistics as computed at the end of annotation |
