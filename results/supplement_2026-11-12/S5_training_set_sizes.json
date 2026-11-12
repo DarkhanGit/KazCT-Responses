@@ -1,0 +1,20 @@
+{
+ "kz": {
+  "n_per_prompt_min": 199,
+  "n_per_prompt_max": 210,
+  "train_fold_mean": 166.1,
+  "train_fold_min": 154,
+  "train_fold_max": 173,
+  "val_mean": 16.8,
+  "fit_mean": 149.2
+ },
+ "ru": {
+  "n_per_prompt_min": 135,
+  "n_per_prompt_max": 139,
+  "train_fold_mean": 110.1,
+  "train_fold_min": 104,
+  "train_fold_max": 116,
+  "val_mean": 11.3,
+  "fit_mean": 98.8
+ }
+}

@@ -1,0 +1,14 @@
+﻿model,condition,lang,k,n_samples,mean,min,max
+xlmr,fewshot,kz,50,3,0.224,0.196,0.238
+xlmr,fewshot,kz,100,3,0.27,0.257,0.282
+xlmr,fewshot,kz,150,3,0.329,0.323,0.334
+xlmr,fewshot,ru,50,3,0.345,0.316,0.389
+xlmr,fewshot,ru,100,3,0.49,0.452,0.512
+mbert,fewshot,kz,50,3,0.482,0.462,0.5
+mbert,fewshot,kz,100,3,0.6,0.584,0.611
+mbert,fewshot,kz,150,3,0.696,0.691,0.704
+mbert,fewshot,ru,50,3,0.645,0.629,0.663
+mbert,fewshot,ru,100,3,0.728,0.716,0.741
+kazroberta,mono_k,kz,50,3,0.309,0.293,0.34
+kazroberta,mono_k,kz,100,3,0.608,0.592,0.637
+kazroberta,mono_k,kz,150,3,0.747,0.729,0.767
