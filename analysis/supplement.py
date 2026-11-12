@@ -20,7 +20,8 @@ lab = pd.read_csv(CLEAN / "labels_final.csv", encoding="utf-8-sig").set_index("r
 stu = pd.read_csv(CLEAN / "students.csv", encoding="utf-8-sig").set_index("student_id")
 resp = pd.read_csv(CLEAN / "responses.csv", encoding="utf-8-sig").set_index("response_id")
 exp = pd.read_csv(CLEAN / "labels_expert.csv", encoding="utf-8-sig")
-ai_ids = set(exp[exp.flag.fillna("").str.contains("ai_suspect")].response_id)
+assert {"R1", "R2"} <= set(exp.rater_id), "labels_expert.csv must contain both main raters (use the master clean folder)"
+ai_ids = set(exp[exp.rater_id.isin(["R1", "R2"]) & exp.flag.fillna("").str.contains("ai_suspect")].response_id)  # either main rater
 
 
 def qwk1(yt, yp):
@@ -114,6 +115,39 @@ q_wo = np.mean([qwk1(g.y_true.values, g.y_pred.values) for _, g in d[~nd].groupb
 json.dump({"kazllm_fewshot_kz_all": round(q_all, 3), "n_no_digit": int(nd.sum()), "kazllm_fewshot_kz_without_no_digit": round(q_wo, 3)}, open(OUT / "S4_kazllm_nodigit.json", "w"), indent=1)
 print("S4:", round(q_all, 3), int(nd.sum()), round(q_wo, 3))
 
+# ---------- S5 training-set sizes, few-shot range over samples ----------
+def qmean(d):
+    return float(np.mean([qwk1(base_y[g.response_id.values[0][:2].lower()].reindex(g.response_id).values, g.y_pred.values.astype(int)) for _, g in d.groupby("question")]))
+base_y = {lang: base[lang].set_index("response_id").y for lang in base}
+S5 = {}
+for lang in ("kz", "ru"):
+    f0 = glob.glob(str(PRED / f"mbert__mono__{lang}__k0__s0__seed11.csv"))[0]
+    d0 = pd.read_csv(f0, encoding="utf-8-sig"); d0 = d0[d0.response_id.isin(base[lang].response_id)]
+    n_q = d0.groupby("question").size(); test = d0.groupby(["question", "fold"]).size()
+    fold_train = (n_q.reindex(test.index.get_level_values(0)).values - test.values)
+    stud_train = d0.student_id.nunique() * 0.8; val_share = np.ceil(0.1 * stud_train) / stud_train
+    S5[lang] = dict(n_per_prompt_min=int(n_q.min()), n_per_prompt_max=int(n_q.max()), train_fold_mean=round(float(fold_train.mean()), 1), train_fold_min=int(fold_train.min()),
+                    train_fold_max=int(fold_train.max()), val_mean=round(float(fold_train.mean() * val_share), 1), fit_mean=round(float(fold_train.mean() * (1 - val_share)), 1))
+rng_rows = []
+for model, cond in (("xlmr", "fewshot"), ("mbert", "fewshot"), ("kazroberta", "mono_k")):
+    for lang in ("kz", "ru"):
+        for k in (50, 100, 150):
+            per_sample = []
+            for smp in (0, 1, 2):
+                fs = [f for f in glob.glob(str(PRED / f"{model}__{cond}__{lang}__k{k}__s{smp}__seed*.csv")) if not f.endswith(".partial.csv")]
+                if not fs: continue
+                vals = []
+                for f in fs:
+                    d = pd.read_csv(f, encoding="utf-8-sig", usecols=["response_id", "question", "y_pred"]); d = d[d.response_id.isin(base[lang].response_id)]
+                    yt = base_y[lang].reindex(d.response_id).values; d = d.assign(y=yt)
+                    vals.append(np.mean([qwk1(g.y.values.astype(int), g.y_pred.values.astype(int)) for _, g in d.groupby("question")]))
+                per_sample.append(np.mean(vals))
+            if per_sample: rng_rows.append(dict(model=model, condition=cond, lang=lang, k=k, n_samples=len(per_sample), mean=round(float(np.mean(per_sample)), 3), min=round(float(min(per_sample)), 3), max=round(float(max(per_sample)), 3)))
+S5R = pd.DataFrame(rng_rows); S5R.to_csv(OUT / "S5_fewshot_range_over_samples.csv", index=False, encoding="utf-8-sig")
+json.dump(S5, open(OUT / "S5_training_set_sizes.json", "w"), indent=1); print(json.dumps(S5, indent=1)); print(S5R.to_string(index=False))
+ct = pd.crosstab(stu.form_lang, stu.school_lang); ct.to_csv(OUT / "S6_form_language_by_school_language.csv", encoding="utf-8-sig"); print(ct)
+print("AI-suspect (either main rater) in test sets:", {l: int(base[l].ai.sum()) for l in base})
+
 # ---------- S3 figures ----------
 T = pd.read_csv(REP / "T3_all_conditions.csv", encoding="utf-8-sig")
 plt.rcParams.update({"font.size": 9, "font.family": "DejaVu Sans"})
@@ -129,20 +163,26 @@ for ax, lang, title in zip(axes, ("kz", "ru"), ("Kazakh test folds", "Russian te
     ax.set_title(title); ax.set_ylim(0, 1); ax.grid(alpha=.3)
 axes[0].set_ylabel("QWK"); h, l = axes[0].get_legend_handles_labels(); fig.legend(h, l, fontsize=7, loc="lower center", ncol=4, frameon=False)
 fig.tight_layout(rect=(0, 0.1, 1, 1)); fig.savefig(OUT / "F2_per_prompt.png", dpi=300); fig.savefig(OUT / "F2_per_prompt.pdf"); plt.close(fig)
-# F3: learning curve
-fig, ax = plt.subplots(figsize=(5.2, 3.6))
-xs = [0, 50, 100, 150, 200]; xl = ["0\n(zero-shot)", "50", "100", "150", "all\n(mono)"]
+# F3: learning curve (v2, 12.11.2026: CI error bars, ceiling as a band, length-only zero-shot reference, legend outside)
+fig, ax = plt.subplots(figsize=(6.2, 3.9))
+xs = [0, 50, 100, 150, 200]; xl = ["0\n(zero-shot)", "50", "100", "150", "all (mono):\n≈150 fitted\n+ ≈17 validation"]
+def sel(model, cond, k=None):
+    r = T[(T.lang == "kz") & (T.model == model) & (T.condition == cond)]
+    if k is not None: r = r[r.k == k]
+    return r.iloc[0] if len(r) else None
 def curve(model, zs, fs, mono):
-    v = [T[(T.lang == "kz") & (T.model == model) & (T.condition == zs)].qwk.values]
-    for k in (50, 100, 150): v.append(T[(T.lang == "kz") & (T.model == model) & (T.condition == fs) & (T.k == k)].qwk.values)
-    v.append(T[(T.lang == "kz") & (T.model == model) & (T.condition == mono)].qwk.values)
-    return [x[0] if len(x) else np.nan for x in v]
-ax.plot(xs, curve("xlmr", "zeroshot", "fewshot", "mono"), "o-", color="#d62728", label="XLM-R (RU → k KZ)")
-ax.plot(xs, curve("mbert", "zeroshot", "fewshot", "mono"), "o-", color="#1f77b4", label="mBERT (RU → k KZ)")
-ax.plot(xs[1:], curve("kazroberta", "zeroshot", "mono_k", "mono")[1:], "s--", color="#2ca02c", label="Kaz-RoBERTa (k KZ only)")
-for m, col, lbl in (("mbert", "#1f77b4", "mBERT joint"), ("xlmr", "#d62728", "XLM-R joint")):
-    ax.axhline(T[(T.lang == "kz") & (T.model == m) & (T.condition == "joint")].qwk.values[0], color=col, ls=":", lw=1, label=lbl)
-ax.axhline(T[(T.lang == "kz") & (T.model == "human")].qwk.values[0], color="k", lw=1.4, label="Human ceiling")
-ax.set_xticks(xs); ax.set_xticklabels(xl); ax.set_xlabel("Kazakh training examples per prompt"); ax.set_ylabel("QWK (Kazakh test folds)"); ax.set_ylim(0, 1); ax.grid(alpha=.3); ax.legend(fontsize=7, loc="lower right")
-fig.tight_layout(); fig.savefig(OUT / "F3_learning_curve.png", dpi=300); fig.savefig(OUT / "F3_learning_curve.pdf"); plt.close(fig)
+    rows = [sel(model, zs)] + [sel(model, fs, k) for k in (50, 100, 150)] + [sel(model, mono)]
+    v = np.array([r.qwk if r is not None else np.nan for r in rows]); lo = np.array([r.ci_lo if r is not None else np.nan for r in rows]); hi = np.array([r.ci_hi if r is not None else np.nan for r in rows])
+    return v, v - lo, hi - v
+for model, zs, fs, col, mk, ls, lbl, sl in (("xlmr", "zeroshot", "fewshot", "#d62728", "o", "-", "XLM-R (RU, then k KZ)", slice(0, 5)), ("mbert", "zeroshot", "fewshot", "#1f77b4", "^", "-", "mBERT (RU, then k KZ)", slice(0, 5)),
+                                         ("kazroberta", "zeroshot", "mono_k", "#2ca02c", "s", "--", "Kaz-RoBERTa (k KZ only)", slice(1, 5))):
+    v, el, eh = curve(model, zs, fs, "mono")
+    ax.errorbar(np.array(xs)[sl], v[sl], yerr=[el[sl], eh[sl]], fmt=mk + ls, color=col, ms=5, lw=1.4, capsize=2.5, label=lbl)
+r = sel("length", "zeroshot"); ax.errorbar([0], [r.qwk], yerr=[[r.qwk - r.ci_lo], [r.ci_hi - r.qwk]], fmt="D", color="#555555", ms=5, capsize=2.5, label="Length-only LR (trained on RU)")
+for m, col, ls, lbl in (("mbert", "#1f77b4", ":", "mBERT joint (RU + all KZ)"), ("xlmr", "#d62728", "-.", "XLM-R joint (RU + all KZ)")):
+    ax.axhline(sel(m, "joint").qwk, color=col, ls=ls, lw=1.1, label=lbl)
+h = sel("human", "R1_R2"); ax.axhspan(h.ci_lo, h.ci_hi, color="0.8", alpha=.6, lw=0); ax.axhline(h.qwk, color="k", lw=1.3, label="Human ceiling (R1–R2) with 95% CI")
+ax.set_xticks(xs); ax.set_xticklabels(xl); ax.set_xlabel("Kazakh training examples per prompt"); ax.set_ylabel("QWK (Kazakh test folds)"); ax.set_ylim(0, 1); ax.set_xlim(-12, 215); ax.grid(alpha=.3)
+ax.legend(fontsize=7, loc="center left", bbox_to_anchor=(1.01, 0.5), frameon=False)
+fig.tight_layout(); fig.savefig(OUT / "F3_learning_curve.png", dpi=600); fig.savefig(OUT / "F3_learning_curve.pdf"); plt.close(fig)
 print("figures saved")
